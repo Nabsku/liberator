@@ -100,7 +100,7 @@ These endpoints can be used to monitor the controller's status.
    go run main.go
    ```
 
-### Testing
+### Testing (not included in the code)
 
 - Unit tests can be added for the reconciliation logic and helper functions.
 - Use tools like [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) for integration testing.
@@ -111,4 +111,4 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the Apache 2.0 License.
