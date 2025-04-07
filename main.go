@@ -24,8 +24,11 @@ const (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme                  = runtime.NewScheme()
+	setupLog                = ctrl.Log.WithName("setup")
+	enableLeaderElection    bool
+	probeAddr               string
+	maxConcurrentReconciles int
 )
 
 func init() {
@@ -33,13 +36,11 @@ func init() {
 }
 
 func main() {
-	var enableLeaderElection bool
-	var probeAddr string
-
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 3, "The maximum number of concurrent reconciles for the controller.")
 
 	opts := zap.Options{
 		Development: true,
@@ -196,7 +197,7 @@ func (r *PVCReconciler) SetupWithManager(mgr manager.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.PersistentVolumeClaim{}).
 		WithOptions(controller.Options{
-			MaxConcurrentReconciles: 1,
+			MaxConcurrentReconciles: maxConcurrentReconciles,
 		}).
 		Complete(r)
 }
