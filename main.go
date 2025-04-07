@@ -13,9 +13,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // Constants
@@ -194,8 +196,42 @@ func removeFinalizer(finalizers []string) []string {
 }
 
 func (r *PVCReconciler) SetupWithManager(mgr manager.Manager) error {
+	hasBoundPVPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
+		// Skip PVCs without a bound PV
+		if pvc, ok := obj.(*corev1.PersistentVolumeClaim); ok {
+			return pvc.Spec.VolumeName != ""
+		}
+		return false
+	})
+
+	predicates := predicate.Funcs{
+		CreateFunc: func(e event.CreateEvent) bool {
+			return hasFinalizer(e.Object.GetFinalizers())
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return false
+		},
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldObject := hasFinalizer(e.ObjectOld.GetFinalizers())
+			newObject := hasFinalizer(e.ObjectNew.GetFinalizers())
+
+			deletionStarted := !e.ObjectNew.GetDeletionTimestamp().IsZero()
+
+			return oldObject != newObject || deletionStarted
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return hasFinalizer(e.Object.GetFinalizers())
+		},
+	}
+
+	combined := predicate.And(
+		hasBoundPVPredicate,
+		predicates,
+	)
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.PersistentVolumeClaim{}).
+		WithEventFilter(combined).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: maxConcurrentReconciles,
 		}).
