@@ -33,7 +33,7 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
+  kind: ClusterRole
   name: {{ .Release.Name }}-controller
 subjects:
   - kind: ServiceAccount
