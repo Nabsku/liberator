@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/go-logr/logr v1.4.2
 	k8s.io/api v0.33.0
-	k8s.io/apimachinery v0.33.0
+	k8s.io/apimachinery v0.33.1
 	k8s.io/client-go v0.33.0
 	sigs.k8s.io/controller-runtime v0.20.4
 )
